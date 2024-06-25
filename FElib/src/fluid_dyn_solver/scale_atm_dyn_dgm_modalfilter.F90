@@ -181,6 +181,7 @@ contains
 
     real(RP), intent(in) :: filterMat(12, 12)
     real(RP), intent(in) :: filterMat_tr(12, 12)
+    real(RP), intent(in) :: filterMat_vtr(12, 12)
     real(RP), intent(inout) :: q_in(12, 12, 12)
     real(RP), intent(inout) :: q_tmp(12, 12, 12)
     
