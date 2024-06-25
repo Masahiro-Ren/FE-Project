@@ -83,17 +83,6 @@ contains
       do ke=lmesh%NeS, lmesh%NeE
 
         tmp(:,:) = 0.0_RP
-        !do ii=1, elem%Np
-        !do kk=1, elem%Np
-        !  Mik = filter%FilterMat(ii,kk) * lmesh%Gsqrt(kk,ke)
-
-        !  tmp(ii,1) = tmp(ii,1) + Mik * DDENS_(kk,ke)
-        !  tmp(ii,2) = tmp(ii,2) + Mik * MOMX_ (kk,ke)
-        !  tmp(ii,3) = tmp(ii,3) + Mik * MOMY_ (kk,ke)
-        !  tmp(ii,4) = tmp(ii,4) + Mik * MOMZ_ (kk,ke)
-        !  tmp(ii,5) = tmp(ii,5) + Mik * DRHOT_(kk,ke)
-        !end do
-        !end do
 
         do ii=1, elem%Np
           DDENS_(ii,ke) = lmesh%Gsqrt(ii,ke) * DDENS_(ii,ke)
@@ -103,7 +92,11 @@ contains
           DRHOT_(ii,ke) = lmesh%Gsqrt(ii,ke) * DRHOT_(ii,ke)
         end do
 
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DDENS_(:,ke), MOMX_(:,ke), MOMY_(:,ke), MOMZ_(:,ke), DRHOT_(:,ke), tmp)
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DDENS_(:,ke), tmp(:,1))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMX_(:,ke),  tmp(:,2))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMY_(:,ke),  tmp(:,3))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMZ_(:,ke),  tmp(:,4))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DRHOT_(:,ke), tmp(:,5))
 
         RGsqrt(:) = 1.0_RP / lmesh%Gsqrt(:,ke)
         DDENS_(:,ke) = tmp(:,1) * RGsqrt(:)
@@ -119,18 +112,12 @@ contains
       do ke=lmesh%NeS, lmesh%NeE
 
         tmp(:,:) = 0.0_RP
-        !do ii=1, elem%Np
-        !do kk=1, elem%Np
-        !  Mik = filter%FilterMat(ii,kk)
-        !  tmp(ii,1) = tmp(ii,1) + Mik * DDENS_(kk,ke)
-        !  tmp(ii,2) = tmp(ii,2) + Mik * MOMX_ (kk,ke)
-        !  tmp(ii,3) = tmp(ii,3) + Mik * MOMY_ (kk,ke)
-        !  tmp(ii,4) = tmp(ii,4) + Mik * MOMZ_ (kk,ke)
-        !  tmp(ii,5) = tmp(ii,5) + Mik * DRHOT_(kk,ke)
-        !end do
-        !end do      
 
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DDENS_(:,ke), MOMX_(:,ke), MOMY_(:,ke), MOMZ_(:,ke), DRHOT_(:,ke), tmp)
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DDENS_(:,ke), tmp(:,1))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMX_(:,ke),  tmp(:,2))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMY_(:,ke),  tmp(:,3))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMZ_(:,ke),  tmp(:,4))
+        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DRHOT_(:,ke), tmp(:,5))
 
         DDENS_(:,ke) = tmp(:,1)
         MOMX_ (:,ke) = tmp(:,2)
@@ -189,18 +176,15 @@ contains
   end subroutine atm_dyn_dgm_tracer_modalfilter_apply
 
 !OCL SERIAL
-  subroutine apply_filter_xyz_direction(filterMat, filterMat_tr, DDENS_, MOMX_, MOMY_, MOMZ_, DRHOT_, tmp )
+  subroutine apply_filter_xyz_direction(filterMat, filterMat_tr, q_in, q_tmp )
     implicit none
 
     real(RP), intent(in) :: filterMat(12, 12)
     real(RP), intent(in) :: filterMat_tr(12, 12)
-    real(RP), intent(inout) :: DDENS_(12, 12, 12)
-    real(RP), intent(inout) :: MOMX_(12, 12, 12)
-    real(RP), intent(inout) :: MOMY_(12, 12, 12)
-    real(RP), intent(inout) :: MOMZ_(12, 12, 12)
-    real(RP), intent(inout) :: DRHOT_(12, 12, 12)
-    real(RP), intent(inout) :: tmp(12, 12, 12, 5)
+    real(RP), intent(inout) :: q_in(12, 12, 12)
+    real(RP), intent(inout) :: q_tmp(12, 12, 12)
     
+    real(RP) :: tmp1, tmp2, tmp3
     integer :: i, j, k
 
     !-- x direction
@@ -208,70 +192,22 @@ contains
     do j=1, 12
     do i=1, 12
 
-      tmp(i,j,k,1) = filterMat(i,1) * DDENS_(1,j,k) + &
-                     filterMat(i,2) * DDENS_(2,j,k) + &
-                     filterMat(i,3) * DDENS_(3,j,k) + & 
-                     filterMat(i,4) * DDENS_(4,j,k) + & 
-                     filterMat(i,5) * DDENS_(5,j,k) + & 
-                     filterMat(i,6) * DDENS_(6,j,k) + & 
-                     filterMat(i,7) * DDENS_(7,j,k) + & 
-                     filterMat(i,8) * DDENS_(8,j,k) + & 
-                     filterMat(i,9) * DDENS_(9,j,k) + & 
-                     filterMat(i,10) * DDENS_(10,j,k) + & 
-                     filterMat(i,11) * DDENS_(11,j,k) + & 
-                     filterMat(i,12) * DDENS_(12,j,k)  
+      tmp1 = filterMat(i,1)  * q_in(1,j,k) + &
+             filterMat(i,2)  * q_in(2,j,k) + &
+             filterMat(i,3)  * q_in(3,j,k) + & 
+             filterMat(i,4)  * q_in(4,j,k)
+              
+      tmp2 = filterMat(i,5)  * q_in(5,j,k) + & 
+             filterMat(i,6)  * q_in(6,j,k) + & 
+             filterMat(i,7)  * q_in(7,j,k) + & 
+             filterMat(i,8)  * q_in(8,j,k) 
 
-      tmp(i,j,k,2) = filterMat(i,1) * MOMX_(1,j,k) + &
-                     filterMat(i,2) * MOMX_(2,j,k) + &
-                     filterMat(i,3) * MOMX_(3,j,k) + & 
-                     filterMat(i,4) * MOMX_(4,j,k) + & 
-                     filterMat(i,5) * MOMX_(5,j,k) + & 
-                     filterMat(i,6) * MOMX_(6,j,k) + & 
-                     filterMat(i,7) * MOMX_(7,j,k) + & 
-                     filterMat(i,8) * MOMX_(8,j,k) + & 
-                     filterMat(i,9) * MOMX_(9,j,k) + & 
-                     filterMat(i,10) * MOMX_(10,j,k) + & 
-                     filterMat(i,11) * MOMX_(11,j,k) + & 
-                     filterMat(i,12) * MOMX_(12,j,k)  
+      tmp3 = filterMat(i,9)  * q_in(9,j,k) + & 
+             filterMat(i,10) * q_in(10,j,k) + & 
+             filterMat(i,11) * q_in(11,j,k) + & 
+             filterMat(i,12) * q_in(12,j,k)  
 
-      tmp(i,j,k,3) = filterMat(i,1) * MOMY_(1,j,k) + &
-                     filterMat(i,2) * MOMY_(2,j,k) + &
-                     filterMat(i,3) * MOMY_(3,j,k) + & 
-                     filterMat(i,4) * MOMY_(4,j,k) + & 
-                     filterMat(i,5) * MOMY_(5,j,k) + & 
-                     filterMat(i,6) * MOMY_(6,j,k) + & 
-                     filterMat(i,7) * MOMY_(7,j,k) + & 
-                     filterMat(i,8) * MOMY_(8,j,k) + & 
-                     filterMat(i,9) * MOMY_(9,j,k) + & 
-                     filterMat(i,10) * MOMY_(10,j,k) + & 
-                     filterMat(i,11) * MOMY_(11,j,k) + & 
-                     filterMat(i,12) * MOMY_(12,j,k)  
-
-      tmp(i,j,k,4) = filterMat(i,1) * MOMZ_(1,j,k) + &
-                     filterMat(i,2) * MOMZ_(2,j,k) + &
-                     filterMat(i,3) * MOMZ_(3,j,k) + & 
-                     filterMat(i,4) * MOMZ_(4,j,k) + & 
-                     filterMat(i,5) * MOMZ_(5,j,k) + & 
-                     filterMat(i,6) * MOMZ_(6,j,k) + & 
-                     filterMat(i,7) * MOMZ_(7,j,k) + & 
-                     filterMat(i,8) * MOMZ_(8,j,k) + & 
-                     filterMat(i,9) * MOMZ_(9,j,k) + & 
-                     filterMat(i,10) * MOMZ_(10,j,k) + & 
-                     filterMat(i,11) * MOMZ_(11,j,k) + & 
-                     filterMat(i,12) * MOMZ_(12,j,k)  
-
-      tmp(i,j,k,5) = filterMat(i,1) * DRHOT_(1,j,k) + &
-                     filterMat(i,2) * DRHOT_(2,j,k) + &
-                     filterMat(i,3) * DRHOT_(3,j,k) + & 
-                     filterMat(i,4) * DRHOT_(4,j,k) + & 
-                     filterMat(i,5) * DRHOT_(5,j,k) + & 
-                     filterMat(i,6) * DRHOT_(6,j,k) + & 
-                     filterMat(i,7) * DRHOT_(7,j,k) + & 
-                     filterMat(i,8) * DRHOT_(8,j,k) + & 
-                     filterMat(i,9) * DRHOT_(9,j,k) + & 
-                     filterMat(i,10) * DRHOT_(10,j,k) + & 
-                     filterMat(i,11) * DRHOT_(11,j,k) + & 
-                     filterMat(i,12) * DRHOT_(12,j,k)  
+      q_tmp(i,j,k) = tmp1 + tmp2 + tmp3
 
     end do
     end do
@@ -281,70 +217,23 @@ contains
     do k=1, 12
     do j=1, 12
     do i=1, 12
-      DDENS_(i,j,k) = tmp(i,1,k,1) * filterMat_tr(1,j) + &
-                      tmp(i,2,k,1) * filterMat_tr(2,j) + &
-                      tmp(i,3,k,1) * filterMat_tr(3,j) + &
-                      tmp(i,4,k,1) * filterMat_tr(4,j) + &
-                      tmp(i,5,k,1) * filterMat_tr(5,j) + &
-                      tmp(i,6,k,1) * filterMat_tr(6,j) + &
-                      tmp(i,7,k,1) * filterMat_tr(7,j) + &
-                      tmp(i,8,k,1) * filterMat_tr(8,j) + &
-                      tmp(i,9,k,1) * filterMat_tr(9,j) + &
-                      tmp(i,10,k,1) * filterMat_tr(10,j) + &
-                      tmp(i,11,k,1) * filterMat_tr(11,j) + &
-                      tmp(i,12,k,1) * filterMat_tr(12,j) 
 
-      MOMX_(i,j,k) = tmp(i,1,k,2) * filterMat_tr(1,j) + &
-                     tmp(i,2,k,2) * filterMat_tr(2,j) + &
-                     tmp(i,3,k,2) * filterMat_tr(3,j) + &
-                     tmp(i,4,k,2) * filterMat_tr(4,j) + &
-                     tmp(i,5,k,2) * filterMat_tr(5,j) + &
-                     tmp(i,6,k,2) * filterMat_tr(6,j) + &
-                     tmp(i,7,k,2) * filterMat_tr(7,j) + &
-                     tmp(i,8,k,2) * filterMat_tr(8,j) + &
-                     tmp(i,9,k,2) * filterMat_tr(9,j) + &
-                     tmp(i,10,k,2) * filterMat_tr(10,j) + &
-                     tmp(i,11,k,2) * filterMat_tr(11,j) + &
-                     tmp(i,12,k,2) * filterMat_tr(12,j) 
+      tmp1 = q_tmp(i,1,k)  * filterMat_tr(1,j) + &
+             q_tmp(i,2,k)  * filterMat_tr(2,j) + &
+             q_tmp(i,3,k)  * filterMat_tr(3,j) + &
+             q_tmp(i,4,k)  * filterMat_tr(4,j)
 
-      MOMY_(i,j,k) = tmp(i,1,k,3) * filterMat_tr(1,j) + &
-                     tmp(i,2,k,3) * filterMat_tr(2,j) + &
-                     tmp(i,3,k,3) * filterMat_tr(3,j) + &
-                     tmp(i,4,k,3) * filterMat_tr(4,j) + &
-                     tmp(i,5,k,3) * filterMat_tr(5,j) + &
-                     tmp(i,6,k,3) * filterMat_tr(6,j) + &
-                     tmp(i,7,k,3) * filterMat_tr(7,j) + &
-                     tmp(i,8,k,3) * filterMat_tr(8,j) + &
-                     tmp(i,9,k,3) * filterMat_tr(9,j) + &
-                     tmp(i,10,k,3) * filterMat_tr(10,j) + &
-                     tmp(i,11,k,3) * filterMat_tr(11,j) + &
-                     tmp(i,12,k,3) * filterMat_tr(12,j) 
+      tmp2 = q_tmp(i,5,k)  * filterMat_tr(5,j) + &
+             q_tmp(i,6,k)  * filterMat_tr(6,j) + &
+             q_tmp(i,7,k)  * filterMat_tr(7,j) + &
+             q_tmp(i,8,k)  * filterMat_tr(8,j)
 
-      MOMZ_(i,j,k) = tmp(i,1,k,4) * filterMat_tr(1,j) + &
-                     tmp(i,2,k,4) * filterMat_tr(2,j) + &
-                     tmp(i,3,k,4) * filterMat_tr(3,j) + &
-                     tmp(i,4,k,4) * filterMat_tr(4,j) + &
-                     tmp(i,5,k,4) * filterMat_tr(5,j) + &
-                     tmp(i,6,k,4) * filterMat_tr(6,j) + &
-                     tmp(i,7,k,4) * filterMat_tr(7,j) + &
-                     tmp(i,8,k,4) * filterMat_tr(8,j) + &
-                     tmp(i,9,k,4) * filterMat_tr(9,j) + &
-                     tmp(i,10,k,4) * filterMat_tr(10,j) + &
-                     tmp(i,11,k,4) * filterMat_tr(11,j) + &
-                     tmp(i,12,k,4) * filterMat_tr(12,j) 
+      tmp3 = q_tmp(i,9,k)  * filterMat_tr(9,j) + &
+             q_tmp(i,10,k) * filterMat_tr(10,j) + &
+             q_tmp(i,11,k) * filterMat_tr(11,j) + &
+             q_tmp(i,12,k) * filterMat_tr(12,j) 
 
-      DRHOT_(i,j,k) = tmp(i,1,k,5) * filterMat_tr(1,j) + &
-                      tmp(i,2,k,5) * filterMat_tr(2,j) + &
-                      tmp(i,3,k,5) * filterMat_tr(3,j) + &
-                      tmp(i,4,k,5) * filterMat_tr(4,j) + &
-                      tmp(i,5,k,5) * filterMat_tr(5,j) + &
-                      tmp(i,6,k,5) * filterMat_tr(6,j) + &
-                      tmp(i,7,k,5) * filterMat_tr(7,j) + &
-                      tmp(i,8,k,5) * filterMat_tr(8,j) + &
-                      tmp(i,9,k,5) * filterMat_tr(9,j) + &
-                      tmp(i,10,k,5) * filterMat_tr(10,j) + &
-                      tmp(i,11,k,5) * filterMat_tr(11,j) + &
-                      tmp(i,12,k,5) * filterMat_tr(12,j) 
+      q_in(i,j,k) = tmp1 + tmp2 + tmp3
 
     end do
     end do
@@ -354,70 +243,23 @@ contains
     do k=1, 12
     do j=1, 12
     do i=1, 12
-      tmp(i,j,k,1) = DDENS_(i,j,1) * filterMat_tr(1,k) + &
-                     DDENS_(i,j,2) * filterMat_tr(2,k) + &
-                     DDENS_(i,j,3) * filterMat_tr(3,k) + &
-                     DDENS_(i,j,4) * filterMat_tr(4,k) + &
-                     DDENS_(i,j,5) * filterMat_tr(5,k) + &
-                     DDENS_(i,j,6) * filterMat_tr(6,k) + &
-                     DDENS_(i,j,7) * filterMat_tr(7,k) + &
-                     DDENS_(i,j,8) * filterMat_tr(8,k) + &
-                     DDENS_(i,j,9) * filterMat_tr(9,k) + &
-                     DDENS_(i,j,10) * filterMat_tr(10,k) + &
-                     DDENS_(i,j,11) * filterMat_tr(11,k) + &
-                     DDENS_(i,j,12) * filterMat_tr(12,k) 
 
-      tmp(i,j,k,2) = MOMX_(i,j,1) * filterMat_tr(1,k) + &
-                     MOMX_(i,j,2) * filterMat_tr(2,k) + &
-                     MOMX_(i,j,3) * filterMat_tr(3,k) + &
-                     MOMX_(i,j,4) * filterMat_tr(4,k) + &
-                     MOMX_(i,j,5) * filterMat_tr(5,k) + &
-                     MOMX_(i,j,6) * filterMat_tr(6,k) + &
-                     MOMX_(i,j,7) * filterMat_tr(7,k) + &
-                     MOMX_(i,j,8) * filterMat_tr(8,k) + &
-                     MOMX_(i,j,9) * filterMat_tr(9,k) + &
-                     MOMX_(i,j,10) * filterMat_tr(10,k) + &
-                     MOMX_(i,j,11) * filterMat_tr(11,k) + &
-                     MOMX_(i,j,12) * filterMat_tr(12,k) 
+      tmp1 = q_in(i,j,1)  * filterMat_tr(1,k) + &
+             q_in(i,j,2)  * filterMat_tr(2,k) + &
+             q_in(i,j,3)  * filterMat_tr(3,k) + &
+             q_in(i,j,4)  * filterMat_tr(4,k)
 
-      tmp(i,j,k,3) = MOMY_(i,j,1) * filterMat_tr(1,k) + &
-                     MOMY_(i,j,2) * filterMat_tr(2,k) + &
-                     MOMY_(i,j,3) * filterMat_tr(3,k) + &
-                     MOMY_(i,j,4) * filterMat_tr(4,k) + &
-                     MOMY_(i,j,5) * filterMat_tr(5,k) + &
-                     MOMY_(i,j,6) * filterMat_tr(6,k) + &
-                     MOMY_(i,j,7) * filterMat_tr(7,k) + &
-                     MOMY_(i,j,8) * filterMat_tr(8,k) + &
-                     MOMY_(i,j,9) * filterMat_tr(9,k) + &
-                     MOMY_(i,j,10) * filterMat_tr(10,k) + &
-                     MOMY_(i,j,11) * filterMat_tr(11,k) + &
-                     MOMY_(i,j,12) * filterMat_tr(12,k) 
+      tmp2 = q_in(i,j,5)  * filterMat_tr(5,k) + &
+             q_in(i,j,6)  * filterMat_tr(6,k) + &
+             q_in(i,j,7)  * filterMat_tr(7,k) + &
+             q_in(i,j,8)  * filterMat_tr(8,k)
 
-      tmp(i,j,k,4) = MOMZ_(i,j,1) * filterMat_tr(1,k) + &
-                     MOMZ_(i,j,2) * filterMat_tr(2,k) + &
-                     MOMZ_(i,j,3) * filterMat_tr(3,k) + &
-                     MOMZ_(i,j,4) * filterMat_tr(4,k) + &
-                     MOMZ_(i,j,5) * filterMat_tr(5,k) + &
-                     MOMZ_(i,j,6) * filterMat_tr(6,k) + &
-                     MOMZ_(i,j,7) * filterMat_tr(7,k) + &
-                     MOMZ_(i,j,8) * filterMat_tr(8,k) + &
-                     MOMZ_(i,j,9) * filterMat_tr(9,k) + &
-                     MOMZ_(i,j,10) * filterMat_tr(10,k) + &
-                     MOMZ_(i,j,11) * filterMat_tr(11,k) + &
-                     MOMZ_(i,j,12) * filterMat_tr(12,k) 
+      tmp3 = q_in(i,j,9)  * filterMat_tr(9,k) + &
+             q_in(i,j,10) * filterMat_tr(10,k) + &
+             q_in(i,j,11) * filterMat_tr(11,k) + &
+             q_in(i,j,12) * filterMat_tr(12,k) 
 
-      tmp(i,j,k,5) = DRHOT_(i,j,1) * filterMat_tr(1,k) + &
-                     DRHOT_(i,j,2) * filterMat_tr(2,k) + &
-                     DRHOT_(i,j,3) * filterMat_tr(3,k) + &
-                     DRHOT_(i,j,4) * filterMat_tr(4,k) + &
-                     DRHOT_(i,j,5) * filterMat_tr(5,k) + &
-                     DRHOT_(i,j,6) * filterMat_tr(6,k) + &
-                     DRHOT_(i,j,7) * filterMat_tr(7,k) + &
-                     DRHOT_(i,j,8) * filterMat_tr(8,k) + &
-                     DRHOT_(i,j,9) * filterMat_tr(9,k) + &
-                     DRHOT_(i,j,10) * filterMat_tr(10,k) + &
-                     DRHOT_(i,j,11) * filterMat_tr(11,k) + &
-                     DRHOT_(i,j,12) * filterMat_tr(12,k) 
+      q_tmp(i,j,k) = tmp1 + tmp2 + tmp3
 
     end do
     end do

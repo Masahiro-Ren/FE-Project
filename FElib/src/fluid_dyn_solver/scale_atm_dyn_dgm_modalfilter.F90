@@ -63,7 +63,7 @@ contains
     
     integer :: ke
     real(RP) :: tmp(elem%Np,5)
-    real(RP) :: FilterMat_tr(12,12)
+    ! real(RP) :: FilterMat_tr(12,12)
     integer :: ii, kk
     real(RP) :: Mik
     logical :: do_weight_Gsqrt_
@@ -92,11 +92,11 @@ contains
           DRHOT_(ii,ke) = lmesh%Gsqrt(ii,ke) * DRHOT_(ii,ke)
         end do
 
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DDENS_(:,ke), tmp(:,1))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMX_(:,ke),  tmp(:,2))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMY_(:,ke),  tmp(:,3))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMZ_(:,ke),  tmp(:,4))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DRHOT_(:,ke), tmp(:,5))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, DDENS_(:,ke), tmp(:,1))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, MOMX_(:,ke),  tmp(:,2))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, MOMY_(:,ke),  tmp(:,3))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, MOMZ_(:,ke),  tmp(:,4))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, DRHOT_(:,ke), tmp(:,5))
 
         RGsqrt(:) = 1.0_RP / lmesh%Gsqrt(:,ke)
         DDENS_(:,ke) = tmp(:,1) * RGsqrt(:)
@@ -113,11 +113,11 @@ contains
 
         tmp(:,:) = 0.0_RP
 
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DDENS_(:,ke), tmp(:,1))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMX_(:,ke),  tmp(:,2))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMY_(:,ke),  tmp(:,3))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, MOMZ_(:,ke),  tmp(:,4))
-        call apply_filter_xyz_direction(filter%FilterMat, FilterMat_tr, DRHOT_(:,ke), tmp(:,5))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, DDENS_(:,ke), tmp(:,1))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, MOMX_(:,ke),  tmp(:,2))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, MOMY_(:,ke),  tmp(:,3))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, MOMZ_(:,ke),  tmp(:,4))
+        call apply_filter_xyz_direction(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, DRHOT_(:,ke), tmp(:,5))
 
         DDENS_(:,ke) = tmp(:,1)
         MOMX_ (:,ke) = tmp(:,2)
@@ -176,7 +176,7 @@ contains
   end subroutine atm_dyn_dgm_tracer_modalfilter_apply
 
 !OCL SERIAL
-  subroutine apply_filter_xyz_direction(filterMat, filterMat_tr, q_in, q_tmp )
+  subroutine apply_filter_xyz_direction(filterMat, filterMat_tr, filterMat_vtr, q_in, q_tmp )
     implicit none
 
     real(RP), intent(in) :: filterMat(12, 12)
@@ -244,20 +244,20 @@ contains
     do j=1, 12
     do i=1, 12
 
-      tmp1 = q_in(i,j,1)  * filterMat_tr(1,k) + &
-             q_in(i,j,2)  * filterMat_tr(2,k) + &
-             q_in(i,j,3)  * filterMat_tr(3,k) + &
-             q_in(i,j,4)  * filterMat_tr(4,k)
+      tmp1 = q_in(i,j,1)  * filterMat_vtr(1,k) + &
+             q_in(i,j,2)  * filterMat_vtr(2,k) + &
+             q_in(i,j,3)  * filterMat_vtr(3,k) + &
+             q_in(i,j,4)  * filterMat_vtr(4,k)
 
-      tmp2 = q_in(i,j,5)  * filterMat_tr(5,k) + &
-             q_in(i,j,6)  * filterMat_tr(6,k) + &
-             q_in(i,j,7)  * filterMat_tr(7,k) + &
-             q_in(i,j,8)  * filterMat_tr(8,k)
+      tmp2 = q_in(i,j,5)  * filterMat_vtr(5,k) + &
+             q_in(i,j,6)  * filterMat_vtr(6,k) + &
+             q_in(i,j,7)  * filterMat_vtr(7,k) + &
+             q_in(i,j,8)  * filterMat_vtr(8,k)
 
-      tmp3 = q_in(i,j,9)  * filterMat_tr(9,k) + &
-             q_in(i,j,10) * filterMat_tr(10,k) + &
-             q_in(i,j,11) * filterMat_tr(11,k) + &
-             q_in(i,j,12) * filterMat_tr(12,k) 
+      tmp3 = q_in(i,j,9)  * filterMat_vtr(9,k) + &
+             q_in(i,j,10) * filterMat_vtr(10,k) + &
+             q_in(i,j,11) * filterMat_vtr(11,k) + &
+             q_in(i,j,12) * filterMat_vtr(12,k) 
 
       q_tmp(i,j,k) = tmp1 + tmp2 + tmp3
 
