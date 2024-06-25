@@ -69,7 +69,7 @@ contains
     logical :: do_weight_Gsqrt_
     real(RP) :: RGsqrt(elem%Np)
     !------------------------------------
-    FilterMat_tr(:,:) = transpose(filter%FilterMat(:,:))
+    ! FilterMat_tr(:,:) = transpose(filter%FilterMat(:,:))
 
 
     if ( present( do_weight_Gsqrt ) ) then
