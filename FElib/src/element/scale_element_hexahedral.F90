@@ -288,23 +288,23 @@ contains
       end do
       end do
     else
-      tmpMat1(:,:) = transpose(elem%V)
-      elem%invM(:,:) = matmul(elem%V, tmpMat1)
-      elem%M(:,:) = linAlgebra_inv( elem%invM )
+      tmpMat1(:,:) = transpose(elem%V(:,:))
+      elem%invM(:,:) = matmul(elem%V(:,:), tmpMat1(:,:))
+      elem%M(:,:) = linAlgebra_inv( elem%invM(:,:) )
     end if
 
     !* Set the stiffness matrix
-    tmpMat1(:,:) = matmul( elem%M, elem%Dx1)
-    tmpMat2(:,:) = transpose(tmpMat1)
-    elem%Sx1(:,:) = matmul( elem%invM, tmpMat2 )
+    tmpMat1(:,:) = matmul( elem%M(:,:), elem%Dx1(:,:))
+    tmpMat2(:,:) = transpose(tmpMat1(:,:))
+    elem%Sx1(:,:) = matmul( elem%invM(:,:), tmpMat2(:,:) )
     
-    tmpMat1(:,:) = matmul( elem%M, elem%Dx2)
-    tmpMat2(:,:) = transpose(tmpMat1)
-    elem%Sx2(:,:) = matmul( elem%invM, tmpMat2 )
+    tmpMat1(:,:) = matmul( elem%M(:,:), elem%Dx2(:,:))
+    tmpMat2(:,:) = transpose(tmpMat1(:,:))
+    elem%Sx2(:,:) = matmul( elem%invM(:,:), tmpMat2(:,:) )
 
-    tmpMat1(:,:) = matmul( elem%M, elem%Dx3)
-    tmpMat2(:,:) = transpose(tmpMat1)
-    elem%Sx3(:,:) = matmul( elem%invM, tmpMat2 )
+    tmpMat1(:,:) = matmul( elem%M(:,:), elem%Dx3(:,:))
+    tmpMat2(:,:) = transpose(tmpMat1(:,:))
+    elem%Sx3(:,:) = matmul( elem%invM(:,:), tmpMat2(:,:) )
 
     !* Set the lift matrix
 
