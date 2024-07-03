@@ -285,22 +285,18 @@ contains
       end do
       end do
     else
-      elem%invM(:,:) = transpose(elem%V)
-      elem%invM(:,:) = matmul(elem%V, elem%invM)
+      elem%invM(:,:) = matmul(elem%V, transpose(elem%V))
       elem%M(:,:) = linAlgebra_inv( elem%invM )
     end if
 
     !* Set the stiffness matrix
-    elem%Sx1(:,:) = matmul( elem%M, elem%Dx1)
-    elem%Sx1(:,:) = transpose(elem%Sx1)
+    elem%Sx1(:,:) = transpose(matmul( elem%M, elem%Dx1))
     elem%Sx1(:,:) = matmul( elem%invM, elem%Sx1 )
     
-    elem%Sx2(:,:) = matmul( elem%M, elem%Dx2)
-    elem%Sx2(:,:) = transpose(elem%Sx2)
+    elem%Sx2(:,:) = transpose(matmul( elem%M, elem%Dx2))
     elem%Sx2(:,:) = matmul( elem%invM, elem%Sx2 )
 
-    elem%Sx3(:,:) = matmul( elem%M, elem%Dx3)
-    elem%Sx3(:,:) = transpose(elem%Sx3)
+    elem%Sx3(:,:) = transpose(matmul( elem%M, elem%Dx3))
     elem%Sx3(:,:) = matmul( elem%invM, elem%Sx3 )
 
     !* Set the lift matrix
