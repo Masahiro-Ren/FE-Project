@@ -126,9 +126,6 @@ contains
     integer :: fp, fp_h1, fp_h2, fp_v
 
     type(QuadrilateralElement) :: elem2D
-
-    real(RP) :: tmpMat1(elem%Np, elem%Np)
-    real(RP) :: tmpMat2(elem%Np, elem%Np)
     !-----------------------------------------------------------------------------
 
     lglPts1D_h(:)      = polynominal_genGaussLobattoPt( elem%PolyOrder_h )
@@ -288,23 +285,19 @@ contains
       end do
       end do
     else
-      tmpMat1(:,:) = transpose(elem%V(:,:))
-      elem%invM(:,:) = matmul(elem%V(:,:), tmpMat1(:,:))
-      elem%M(:,:) = linAlgebra_inv( elem%invM(:,:) )
+      elem%invM(:,:) = matmul(elem%V, transpose(elem%V))
+      elem%M(:,:) = linAlgebra_inv( elem%invM )
     end if
 
     !* Set the stiffness matrix
-    tmpMat1(:,:) = matmul( elem%M(:,:), elem%Dx1(:,:))
-    tmpMat2(:,:) = transpose(tmpMat1(:,:))
-    elem%Sx1(:,:) = matmul( elem%invM(:,:), tmpMat2(:,:) )
+    elem%Sx1(:,:) = transpose(matmul( elem%M, elem%Dx1))
+    elem%Sx1(:,:) = matmul( elem%invM, elem%Sx1 )
     
-    tmpMat1(:,:) = matmul( elem%M(:,:), elem%Dx2(:,:))
-    tmpMat2(:,:) = transpose(tmpMat1(:,:))
-    elem%Sx2(:,:) = matmul( elem%invM(:,:), tmpMat2(:,:) )
+    elem%Sx2(:,:) = transpose(matmul( elem%M, elem%Dx2))
+    elem%Sx2(:,:) = matmul( elem%invM, elem%Sx2 )
 
-    tmpMat1(:,:) = matmul( elem%M(:,:), elem%Dx3(:,:))
-    tmpMat2(:,:) = transpose(tmpMat1(:,:))
-    elem%Sx3(:,:) = matmul( elem%invM(:,:), tmpMat2(:,:) )
+    elem%Sx3(:,:) = transpose(matmul( elem%M, elem%Dx3))
+    elem%Sx3(:,:) = matmul( elem%invM, elem%Sx3 )
 
     !* Set the lift matrix
 
