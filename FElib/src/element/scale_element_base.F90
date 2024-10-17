@@ -15,7 +15,7 @@ module scale_element_base
   !++ used modules
   !
   use scale_precision  
-  use scale_linalgebra, only: linalgebra_inv
+  ! use scale_linalgebra, only: linalgebra_inv
   
   !-----------------------------------------------------------------------------
   implicit none
@@ -205,7 +205,7 @@ contains
 !OCL SERIAL
   subroutine ElementBase_construct_MassMat( V, Np, &
     MassMat, invMassMat )
-    ! use scale_linalgebra, only: linalgebra_inv
+    use scale_linalgebra, only: linalgebra_inv
     implicit none
     integer, intent(in) :: Np
     real(RP), intent(in) :: V(Np,Np)
