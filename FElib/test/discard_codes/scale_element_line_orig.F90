@@ -3,7 +3,7 @@
 !! @par Description
 !!           A module for a line finite element
 !!
-!! @author Yuta Kawai, Team SCALE
+!! @author Team SCALE
 !!
 !<
 #include "scaleFElib.h"
@@ -81,10 +81,7 @@ contains
       polynominal_genGaussLobattoPt, Polynominal_GenGaussLobattoPtIntWeight,   &
       polynominal_genLegendrePoly, Polynominal_genDLegendrePoly,               &
       polynominal_genLagrangePoly, polynominal_genDLagrangePoly_lglpt
-    use scale_element_base, only: & 
-      ElementBase_construct_MassMat, ElementBase_construct_StiffMat, &
-      ElementBase_construct_LiftMat
-    
+
     implicit none
 
     type(LineElement), intent(inout) :: elem
@@ -153,13 +150,13 @@ contains
         elem%invM(i,i) = 1.0_RP/elem%IntWeight_lgl(i)
       end do      
     else
-      call ElementBase_construct_MassMat( elem%V, elem%Np, & ! (in)
-        elem%M, elem%invM )                                  ! (out)
+      elem%invM(:,:) = matmul(elem%V, transpose(elem%V))
+      elem%M(:,:) = linAlgebra_inv( elem%invM )
     end if
 
     !* Set the stiffness matrix
-    call ElementBase_construct_StiffMat( elem%M, elem%invM, elem%Dx1, elem%Np, & ! (in)
-      elem%Sx1 )                                                                 ! (out)
+    elem%Sx1(:,:) = transpose(matmul( elem%M, elem%Dx1))
+    elem%Sx1(:,:) = matmul( elem%invM, elem%Sx1 )
 
     !* Set the lift matrix
 
@@ -171,8 +168,7 @@ contains
       end do  
       Emat(elem%Fmask(:,f), (f-1)*elem%Nfp+1:f*elem%Nfp) = MassEdge
     end do
-    call ElementBase_construct_LiftMat( elem%invM, EMat, elem%Np, elem%NfpTot, & ! (in)
-      elem%Lift )                                                                ! (out)
+    elem%Lift(:,:) = matmul( elem%invM, Emat )
 
     return
   end subroutine construct_Element

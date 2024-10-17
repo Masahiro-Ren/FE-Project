@@ -3,7 +3,7 @@
 !! @par Description
 !!           A module for a hexahedral finite element
 !!
-!! @author Yuta Kawai, Team SCALE
+!! @author Team SCALE
 !!
 !<
 #include "scaleFElib.h"
@@ -18,6 +18,7 @@ module scale_element_hexahedral
   use scale_element_base, only: &
     ElementBase3D, &
     ElementBase3D_Init, ElementBase3D_Final
+  
   !-----------------------------------------------------------------------------
   implicit none
   private
@@ -89,9 +90,6 @@ contains
       polynominal_genGaussLobattoPt, Polynominal_GenGaussLobattoPtIntWeight,   &
       polynominal_genLegendrePoly, Polynominal_genDLegendrePoly,               &
       polynominal_genLagrangePoly, polynominal_genDLagrangePoly_lglpt
-    use scale_element_base, only: & 
-      ElementBase_construct_MassMat, ElementBase_construct_StiffMat, &
-      ElementBase_construct_LiftMat
     use scale_element_quadrilateral, only: QuadrilateralElement
 
     implicit none
@@ -287,18 +285,19 @@ contains
       end do
       end do
     else
-      call ElementBase_construct_MassMat( elem%V, elem%Np, & ! (in)
-        elem%M, elem%invM )                                  ! (out)
+      elem%invM(:,:) = matmul(elem%V, transpose(elem%V))
+      elem%M(:,:) = linAlgebra_inv( elem%invM )
     end if
 
     !* Set the stiffness matrix
+    elem%Sx1(:,:) = transpose(matmul( elem%M, elem%Dx1))
+    elem%Sx1(:,:) = matmul( elem%invM, elem%Sx1 )
+    
+    elem%Sx2(:,:) = transpose(matmul( elem%M, elem%Dx2))
+    elem%Sx2(:,:) = matmul( elem%invM, elem%Sx2 )
 
-    call ElementBase_construct_StiffMat( elem%M, elem%invM, elem%Dx1, elem%Np, & ! (in)
-      elem%Sx1 )                                                                 ! (out)
-    call ElementBase_construct_StiffMat( elem%M, elem%invM, elem%Dx2, elem%Np, & ! (in)
-      elem%Sx2 )                                                                 ! (out)
-    call ElementBase_construct_StiffMat( elem%M, elem%invM, elem%Dx3, elem%Np, & ! (in)
-      elem%Sx3 )                                                                 ! (out)
+    elem%Sx3(:,:) = transpose(matmul( elem%M, elem%Dx3))
+    elem%Sx3(:,:) = matmul( elem%invM, elem%Sx3 )
 
     !* Set the lift matrix
 
@@ -340,8 +339,7 @@ contains
         end do
         end do
       else
-        call ElementBase_construct_MassMat( V2D_h, elem%Nfp_h, & ! (in)
-          MassEdge_h )                                           ! (out)
+        MassEdge_h(:,:) = linalgebra_inv(matmul(V2D_h, transpose(V2D_h)))
       end if
 
       is = (f-1)*elem%Nfp_h + 1
@@ -359,8 +357,7 @@ contains
         end do
         end do
       else
-        call ElementBase_construct_MassMat( V2D_v, elem%Nfp_v, & ! (in)
-          MassEdge_v )                                           ! (out)
+        MassEdge_v(:,:) = linalgebra_inv(matmul(V2D_v, transpose(V2D_v)))
       end if
 
       is = elem%Nfaces_h*elem%Nfp_h + (f-1)*elem%Nfp_v + 1
@@ -368,8 +365,7 @@ contains
       Emat(elem%Fmask_v(:,f), is:ie) = MassEdge_v
     end do
 
-    call ElementBase_construct_LiftMat( elem%invM, EMat, elem%Np, elem%NfpTot, & ! (in)
-      elem%Lift )                                                                ! (out)
+    elem%Lift(:,:) = matmul( elem%invM, Emat )
 
     return
   end subroutine construct_Element
@@ -396,7 +392,7 @@ contains
     real(RP) :: r_int1D_i(IntrpPolyOrder)
     real(RP) :: r_int1Dw_i(IntrpPolyOrder)
     real(RP) :: P_int1D_ori_h(IntrpPolyOrder,this%Nnode_h1D)
-    real(RP) :: P_int1D_ori_v(IntrpPolyOrder,this%Nnode_v)
+    real(RP) :: P_int1D_ori_v(IntrpPolyOrder,this%Nfp_v)
     real(RP) :: Vint(IntrpPolyOrder**3,this%Np)
 
     integer :: p1, p2, p3, p1_, p2_, p3_
