@@ -16,8 +16,6 @@ program pref_modalfilter
     integer :: x, y, z, kp
     real(RP) :: q_in(Np)
     real(RP) :: q_out(Np)
-    real(RP) :: error(Np)
-    real(RP) :: rmse
 
     call elem%Init(porder, porder, .false.)
 
@@ -35,7 +33,7 @@ program pref_modalfilter
 
     q_out(:) = 0.0_RP
 
-    call apply_filter_xyz(filter%FilterMat, filetr%FilterMat_tr, filter%FilterMat_v_tr, q_in, q_out)
+    call apply_filter_xyz(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, q_in, q_out)
         
    
 contains
