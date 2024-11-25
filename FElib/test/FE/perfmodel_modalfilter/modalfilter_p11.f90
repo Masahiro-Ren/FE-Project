@@ -33,7 +33,7 @@ program pref_modalfilter
 
     q_out(:) = 0.0_RP
 
-    call apply_filter_xyz(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, q_in, q_out)
+    call apply_filter_xyz_direction_orig(filter%FilterMat, filter%FilterMat_tr, filter%FilterMat_v_tr, q_in, q_out)
         
    
 contains
