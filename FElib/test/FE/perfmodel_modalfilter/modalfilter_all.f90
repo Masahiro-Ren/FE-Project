@@ -33,25 +33,25 @@ program perf_modalfilter
         do y = 1, Np1D
         do x = 1, Np1D
                 kp = x + (y - 1) * Np1D + (z - 1) * Np1D * Np1D
-                DDENS(kp) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
-                MOMX (kp) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
-                MOMY (kp) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
-                MOMZ (kp) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
-                DRHOT(kp) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
-                Gsqrt(kp) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
+                DDENS(kp,ke) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
+                MOMX (kp,ke) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
+                MOMY (kp,ke) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
+                MOMZ (kp,ke) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
+                DRHOT(kp,ke) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
+                Gsqrt(kp,ke) = sin(dble(x)) * sin(dble(y)) * sin(dble(z)) 
         end do
         end do
         end do
     end do
 
-    call modalfilter(Np, Ne, DDENS, MOMX, MOMY, MOMZ, filter, Gsqrt)
+    call apply_modalfilter(Np, Ne, DDENS, MOMX, MOMY, MOMZ, DRHOT, filter, Gsqrt)
 
     write(*,*) "Finished Peacefully."
         
    
 contains
     !OCL SERIAL
-    subroutine modalfilter(Np, Ne, DDENS_, MOMX_, MOMY_, MOMZ_, filter, Gsqrt)
+    subroutine apply_modalfilter(Np, Ne, DDENS_, MOMX_, MOMY_, MOMZ_, DRHOT_, filter, Gsqrt)
         implicit none
 
         integer, intent(in) :: Np, Ne
@@ -64,7 +64,7 @@ contains
         real(RP), intent(in) :: Gsqrt(Np, Ne)
 
 
-        integer :: ke, ii, kk
+        integer :: ke, ii
         real(RP) :: tmp(Np, 5)
         real(RP) :: RGsqrt(Np)
 
@@ -93,7 +93,7 @@ contains
             DDENS_(:,ke) = tmp(:,5) * RGsqrt(:)
         end do
 
-    end subroutine modalfilter
+    end subroutine apply_modalfilter
 
 
     !OCL SERIAL
