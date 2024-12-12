@@ -1,4 +1,5 @@
 #include "scalelib.h"
+
 program perf_modalfilter
     use scale_precision
     use scale_element_line
@@ -9,12 +10,12 @@ program perf_modalfilter
     type(HexahedralElement) :: elem
     type(ModalFilter) :: filter
 
-    integer, parameter :: Ne=512
+    integer, parameter :: Ne=342
     integer, parameter :: porder=11
     integer, parameter :: Np1D=porder+1
     integer, parameter :: Np=(porder+1)**3
 
-    integer :: x, y, z, kp, ke
+    integer :: x, y, z, kp, ke, steps
     real(RP) :: DDENS(Np, Ne)
     real(RP) :: MOMX(Np, Ne)
     real(RP) :: MOMY(Np, Ne)
@@ -44,7 +45,11 @@ program perf_modalfilter
         end do
     end do
 
-    call apply_modalfilter(Np, Ne, DDENS, MOMX, MOMY, MOMZ, DRHOT, filter, Gsqrt)
+    call fapp_start("modal_test", 1, 0)
+    do steps = 1, 150
+        call apply_modalfilter(Np, Ne, DDENS, MOMX, MOMY, MOMZ, DRHOT, filter, Gsqrt)
+    end do
+    call fapp_stop("modal_test", 1, 0)
 
     write(*,*) "Finished Peacefully."
         
